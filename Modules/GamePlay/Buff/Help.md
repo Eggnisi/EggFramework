@@ -1,0 +1,42 @@
+## Buff系统使用说明
+### 核心思想
+  + Buff是一个短期状态，在这个状态下的不同回调时机会执行不同的回调函数。
+### Buff的定义
+  + 所有Buff数据使用BuffData定义，BuffData是一个ScriptableObject。
+  + BuffData包含了Buff的所有信息，包括Buff的持续时间、Buff的类型、Buff的回调函数等。
+  + BuffData本身只是一个数据容器。
+### BuffHandle
+  + BuffHandle是游戏物体上挂载的组件，用于处理Buff的逻辑。
+  + BuffHandle负责管理Buff的生命周期，包括Buff的添加、结束、更新等。
+  + BuffHandle会在每一帧调用Update方法，执行Buff的回调函数。
+### BuffCallbackHandler
+  + Buff效果的逻辑单元
+  + 包含一个函数
+  + 每次定义BuffCallbackHandler，都需要定义一个BuffCallbackParam与之绑定
+### 回调时机
+  + Buff的回调时机分为以下几种：
+    - OnCreate：Buff添加时触发
+    - OnUpdate：Buff每帧更新时触发
+    - OnRemove：Buff结束时触发
+    - OnAddStack：Buff层数增加时触发
+    - OnReduceStack：Buff层数减少时触发
+    - 其他自定义回调时机（调用需要自行拓展，可以在Buff管理面板中添加）
+### 从零开始使用Buff系统
+  + 在框架中注册BuffDataModel（项目使用QFramework，所以需要找到你的架构类然后注册BuffModel，BuffModel将为你解决Buff数据的加载问题）
+  + 编写好所有可能用到的逻辑单元BuffCallbackHandler
+  + 在Unity中右键菜单->创建->BuffManager->BuffData,并重命名
+  + 修改BuffData的基础数据，在BuffData中添加BuffModule（BuffModule由回调时机和BuffCallbackHandler组成，这意味着你可以在同一个回调时机挂载多个BuffCallbackHandler）
+    + PS：这有什么用（？）造成伤害与播放特效可以在同一个回调时机挂载，但造成伤害与播放特效的逻辑应该解耦而不是绑定。同样的，触发受伤动画等单元逻辑也是如此
+  + 在Buff管理面板中点击**更新Buff数据**，这将会将所有BuffData收集起来，由BuffDataModel自动加载，并生成BuffConstant常量类
+  + 在需要使用Buff的游戏物体上添加BuffHandle组件
+  + 调用BuffHandle的AddBuff方法添加Buff
+  + 如果自定义了回调时机，需要在自定义时机自行触发BuffHandle.TriggerCustom()
+### 扩展功能
+  + Buff系统提供了Tag功能，可以在BuffData中添加Tag，方便在运行时进行过滤等操作。
+  + 需要在Buff管理面板中添加Tag，添加后的Tag在BuffData的配置视图中将作为下拉框的形式显示。
+  + BuffCallbackHandler是通过反射获取参数的，可以通过三个属性对BuffCallbackParam的成员进行修饰
+    + BuffParamParserAttribute：用于指定字段的解析器，解析器可以通过继承IBuffParamPraser接口实现
+    + BuffParamValidatorAttribute：用于指定字段的验证器, 验证器可以通过继承IBuffParamValidator接口实现
+    + BuffParamValueGetterAttribute：用于指定字段的值获取器, 值获取器可以通过继承IBuffParamValueGetter接口实现
+      + 值获取器可以用于将TextField输入值改为下拉框的形式获取
+  
