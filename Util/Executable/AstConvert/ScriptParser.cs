@@ -1,11 +1,4 @@
-﻿#region
-
-// 作者： Egg
-// 时间： 2025 07.19 06:58
-
-#endregion
-
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -119,10 +112,29 @@ namespace EggFramework.Executable
             if (PeekToken() == "if") return ParseBranch();
             if (PeekToken() == "{") return ParseBlock();
             if (PeekToken() == "var") return ParseAssignment();
+            if (PeekToken() == "return") return ParseReturnStatement();
             return ParseExpressionStatement();
         }
 
-        // 新增：解析赋值语句
+        // 解析return语句
+        private ReturnStatement ParseReturnStatement()
+        {
+            ExpectToken("return");
+            
+            // 检查是否有分号或块结束（表示没有返回值）
+            if (PeekToken() == ";" || PeekToken() == "}")
+            {
+                if (PeekToken() == ";") ExpectToken(";");
+                return new ReturnStatement(null);
+            }
+            
+            // 解析返回值表达式
+            Expression returnValue = ParseExpression();
+            if (PeekToken() == ";") ExpectToken(";");
+            return new ReturnStatement(returnValue);
+        }
+
+        // 解析赋值语句
         private AssignmentStatement ParseAssignment()
         {
             ExpectToken("var");
@@ -134,7 +146,7 @@ namespace EggFramework.Executable
             return new AssignmentStatement(variableName, expr);
         }
 
-        // 新增：解析表达式语句
+        // 解析表达式语句
         private ExpressionStatement ParseExpressionStatement()
         {
             Expression expr = ParseExpression();
@@ -177,7 +189,7 @@ namespace EggFramework.Executable
         // 更新表达式解析流程
         private Expression ParseExpression() => ParseAssignmentExpression();
 
-        // 新增：解析赋值表达式
+        // 解析赋值表达式
         private Expression ParseAssignmentExpression()
         {
             // 先解析左侧表达式（可能是变量或成员访问）
@@ -271,7 +283,7 @@ namespace EggFramework.Executable
             return expr;
         }
 
-        // 新增：解析函数调用（基于已有表达式）
+        // 解析函数调用
         private FunctionCallExpression ParseFunctionCall(Expression target)
         {
             ExpectToken("(");

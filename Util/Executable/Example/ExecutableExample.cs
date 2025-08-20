@@ -7,11 +7,14 @@
 
 using System;
 using System.Collections.Generic;
+using Sirenix.OdinInspector;
+using UnityEngine;
 
 namespace EggFramework.Executable
 {
-    public static class ExecutableExample
+    public class ExecutableExample : MonoBehaviour
     {
+        [Button]
         public static void RunExample()
         {
             var script =
@@ -22,9 +25,11 @@ namespace EggFramework.Executable
                 "print($enemy_info.tags[0])" +
                 "if($shield == 3 || $health > 8 && has_buff(\"flame\")){" +
                 "   attack(add(1, $dice), \"flame\");" +
+                "   return 1;" +
                 "}else{" +
                 "   heal($shield, \"flame\");" +
                 "   heal($shield);" +
+                "   return 2;" +
                 "}";
             var parser = new ScriptParser();
             var ast    = parser.ParseStatement(script); 
