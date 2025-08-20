@@ -5,6 +5,9 @@
 
 #endregion
 
+#if UNITY_EDITOR
+
+
 using System.IO;
 using System.Reflection;
 using NugetForUnity.Configuration;
@@ -18,7 +21,25 @@ namespace EggFramework.Util
         [InitializeOnLoadMethod]
         private static void InjectNuGetConfigPath()
         {
-            Debug.Log($"自动设置NuGet包管理器配置文件路径:{PathHelper.BeautifyPath(PathHelper.Get3rdDirectoryPath())}");
+            var rootPath = PathHelper.GetAbsoluteAssetsPath();
+            if (File.Exists(Path.Combine(rootPath, "NuGet.config")))
+            {
+                File.Delete(Path.Combine(rootPath, "NuGet.config"));
+                File.Delete(Path.Combine(rootPath, "NuGet.config") + ".meta");
+            }
+
+            if (File.Exists(Path.Combine(rootPath, "packages.config")))
+            {
+                File.Delete(Path.Combine(rootPath, "packages.config"));
+                File.Delete(Path.Combine(rootPath, "packages.config") + ".meta");
+            }
+            
+            if (Directory.Exists(Path.Combine(rootPath, "Packages")))
+            {
+                Directory.Delete(Path.Combine(rootPath, "Packages"));
+                File.Delete(Path.Combine(rootPath, "Packages") + ".meta");
+            }
+
             typeof(ConfigurationManager).GetProperty("NugetConfigFilePath",
                     BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic)
                 ?.SetMethod
@@ -26,3 +47,4 @@ namespace EggFramework.Util
         }
     }
 }
+#endif

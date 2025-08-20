@@ -1,13 +1,13 @@
 #region
 
 //文件创建者：Egg
-//创建时间：04-05 10:33
+//创建时间：08-20 07:02
 
 #endregion
 
 namespace EggFramework
 {
-    public interface IBasePropertyModifier : IPropertyModifier
+    public interface IPropertyModifySource
     {
         
     }

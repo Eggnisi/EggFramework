@@ -9,11 +9,25 @@ namespace EggFramework.DynamicText
     {
         public class TagNode
         {
-            public string                     TagName       { get; set; }
-            public Dictionary<string, object> Parameters    { get; } = new();
-            public bool                       IsSelfClosing { get; set; }
-            public string                     TextContent   { get; set; } // 用于 #TEXT 节点
-            public List<TagNode>              Children      { get; } = new();
+            public string TagName { get; set; }
+            public Dictionary<string, object> Parameters { get; } = new();
+            public bool IsSelfClosing { get; set; }
+            public string TextContent { get; set; } // 用于 #TEXT 节点
+            public List<TagNode> Children { get; } = new();
+            
+            // 添加父节点属性
+            public TagNode Parent { get; internal set; }
+            
+            // 获取父节点链的迭代器（从直接父节点到根节点）
+            public IEnumerable<TagNode> GetAncestors()
+            {
+                var current = Parent;
+                while (current != null)
+                {
+                    yield return current;
+                    current = current.Parent;
+                }
+            }
         }
 
         public static TagNode Parse(string input)
@@ -22,9 +36,9 @@ namespace EggFramework.DynamicText
             return parser.Parse();
         }
 
-        private readonly string         _input;
-        private          int            _position;
-        private readonly Stack<TagNode> _tagStack = new Stack<TagNode>();
+        private readonly string _input;
+        private int _position;
+        private readonly Stack<TagNode> _tagStack = new();
 
         private HtmlTagParser(string input)
         {
@@ -84,17 +98,17 @@ namespace EggFramework.DynamicText
             }
             else
             {
-                bool   isSelfClosing = false;
-                string tagName       = ReadTagName();
-                var    parameters    = new Dictionary<string, object>();
-                
+                bool isSelfClosing = false;
+                string tagName = ReadTagName();
+                var parameters = new Dictionary<string, object>();
+
                 SkipWhitespace();
 
                 if (_position < _input.Length && _input[_position] == '=')
                 {
-                    _position++; 
+                    _position++;
                     SkipWhitespace();
-                    
+
                     object paramValue = ReadParameterValue();
                     parameters["value"] = paramValue;
                 }
@@ -109,15 +123,15 @@ namespace EggFramework.DynamicText
                             SkipWhitespace();
                             continue;
                         }
-                        
+
                         if (_position >= _input.Length ||
                             _input[_position] == '>' ||
                             _input[_position] == '/')
                             break;
-                        
+
                         var param = ReadParameter();
                         parameters[param.Key] = param.Value;
-                        
+
                         SkipWhitespace();
                     }
                 }
@@ -138,10 +152,11 @@ namespace EggFramework.DynamicText
 
                 var tag = new TagNode
                 {
-                    TagName       = tagName,
-                    IsSelfClosing = isSelfClosing
+                    TagName = tagName,
+                    IsSelfClosing = isSelfClosing,
+                    Parent = _tagStack.Peek()  // 设置父节点
                 };
-                
+
                 foreach (var param in parameters)
                 {
                     tag.Parameters[param.Key] = param.Value;
@@ -167,13 +182,15 @@ namespace EggFramework.DynamicText
             if (_position > start)
             {
                 string text = _input.Substring(start, _position - start);
-                if (!string.IsNullOrEmpty(text))
+                if (!string.IsNullOrEmpty(text.Trim()))
                 {
-                    _tagStack.Peek().Children.Add(new TagNode
+                    var textNode = new TagNode
                     {
-                        TagName     = "#TEXT",
-                        TextContent = text
-                    });
+                        TagName = "#TEXT",
+                        TextContent = text,
+                        Parent = _tagStack.Peek()  // 设置文本节点的父节点
+                    };
+                    _tagStack.Peek().Children.Add(textNode);
                 }
             }
         }
@@ -213,16 +230,16 @@ namespace EggFramework.DynamicText
                 throw new ParseException("Expected parameter name", _position);
 
             string paramName = _input.Substring(nameStart, _position - nameStart);
-            
+
             SkipWhitespace();
-            
+
             if (_position >= _input.Length || _input[_position] != '=')
                 throw new ParseException($"Expected '=' after parameter name '{paramName}'", _position);
 
-            _position++; 
-            
+            _position++;
+
             SkipWhitespace();
-            
+
             object paramValue = ReadParameterValue();
 
             return new KeyValuePair<string, object>(paramName, paramValue);
@@ -234,12 +251,12 @@ namespace EggFramework.DynamicText
                 throw new ParseException("Unexpected end of input while reading parameter value", _position);
 
             char c = _input[_position];
-            
+
             if (c is '"' or '\'')
             {
                 return ReadQuotedString();
             }
-            
+
             int start = _position;
             while (_position < _input.Length &&
                    !char.IsWhiteSpace(_input[_position]) &&
@@ -251,18 +268,18 @@ namespace EggFramework.DynamicText
             }
 
             string valueStr = _input.Substring(start, _position - start);
-            
+
             if (string.Equals(valueStr, "true", StringComparison.OrdinalIgnoreCase))
                 return true;
             if (string.Equals(valueStr, "false", StringComparison.OrdinalIgnoreCase))
                 return false;
-            
+
             if (int.TryParse(valueStr, NumberStyles.Integer, CultureInfo.InvariantCulture, out int intValue))
                 return intValue;
-            
+
             if (float.TryParse(valueStr, NumberStyles.Float, CultureInfo.InvariantCulture, out float floatValue))
                 return floatValue;
-            
+
             return valueStr;
         }
 

@@ -7,8 +7,19 @@
 
 namespace EggFramework
 {
+    public enum EPropertyModifierType
+    {
+        Additive,
+        Multiply,
+        Override,
+    }
+    
     public interface IPropertyModifier
     {
-        int Priority { get; }
+        EPropertyModifierType ModifierType { get; }
+        int                   Priority     { get; }
+        bool                  IsDynamic    { get; }
+        float                 Value        { get; }
+        IPropertyModifySource Source       { get; }
     }
 }
