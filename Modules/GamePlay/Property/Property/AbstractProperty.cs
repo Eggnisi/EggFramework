@@ -18,10 +18,10 @@ namespace EggFramework
         protected          bool _isDirty;
         protected          Action _onDirty;
         public             IReadOnlyList<IPropertyModifier> Modifiers => _modifiers;
-        public             PropertyHandle PropertyHandle { get; private set; }
+        public             IPropertyHandle PropertyHandle { get; private set; }
         public             string PropertyId { get; protected set; }
         public             bool IsDynamic => Modifiers.Any(mod => mod is DynamicPropertyModifier);
-        public void SetPropertyManager(PropertyHandle handle) => PropertyHandle = handle;
+        public void SetPropertyHandle(IPropertyHandle handle) => PropertyHandle = handle;
         IReadOnlyList<IPropertyModifier> IProperty.Modifiers => _modifiers.AsReadOnly();
         
         public IReadOnlyList<IPropertyModifier> GetModifiersFromSource(IPropertyModifySource source) =>

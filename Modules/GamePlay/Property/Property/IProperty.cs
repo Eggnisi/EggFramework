@@ -12,8 +12,8 @@ namespace EggFramework
 {
     public interface IProperty
     {
-        PropertyHandle PropertyHandle { get; }
-        void SetPropertyManager(PropertyHandle handle);
+        IPropertyHandle PropertyHandle { get; }
+        void SetPropertyHandle(IPropertyHandle handle);
         IReadOnlyList<IPropertyModifier> Modifiers { get; }
         IReadOnlyList<IPropertyModifier> GetModifiersFromSource(IPropertyModifySource source);
         void AddModifier(IPropertyModifier modifier);
