@@ -407,6 +407,38 @@ namespace EggFramework.Util
 
             SaveSetting();
         }
+        
+        public static List<GameObject> LoadAllPrefabsInFolder(string folderPath)
+        {
+            List<GameObject> prefabs = new List<GameObject>();
+
+            // 确保路径以 "Assets/" 开头
+            if (!folderPath.StartsWith("Assets/"))
+            {
+                Debug.LogError($"路径必须以 'Assets/' 开头: {folderPath}");
+                return prefabs;
+            }
+
+            // 搜索所有 .prefab 文件
+            string[] guids = AssetDatabase.FindAssets("t:Prefab", new string[] { folderPath });
+
+            foreach (string guid in guids)
+            {
+                string     path   = AssetDatabase.GUIDToAssetPath(guid);
+                GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(path);
+
+                if (prefab != null)
+                {
+                    prefabs.Add(prefab);
+                }
+                else
+                {
+                    Debug.LogWarning($"无法加载预制体: {path}");
+                }
+            }
+
+            return prefabs;
+        }
 #endif
     }
 }
