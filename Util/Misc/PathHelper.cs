@@ -8,7 +8,11 @@
 
 using System.IO;
 using System.Text;
+
+
+#if UNITY_EDITOR
 using UnityEditor;
+#endif
 using UnityEngine;
 
 namespace EggFramework.Util
@@ -17,6 +21,7 @@ namespace EggFramework.Util
     {
         public static string GetAbsoluteAssetsPath() => Application.dataPath;
         public static string GetAbsoluteProjectPath() => GetParentDirectory(GetAbsoluteAssetsPath());
+#if UNITY_EDITOR
         public static string Get3rdDirectoryPath() => Path.Combine(GetFrameworkDirectoryPath(), "3rd");
 
         public static string GetFrameworkDirectoryPath()
@@ -24,6 +29,7 @@ namespace EggFramework.Util
             var relativePath = FindAssemblyDefinition("EggFramework.asmdef");
             return GetParentDirectory(Path.Combine(GetAbsoluteProjectPath(), relativePath));
         }
+#endif
 
         public static string BeautifyPath(string path)
         {
@@ -96,7 +102,7 @@ namespace EggFramework.Util
 
             return result.ToString();
         }
-
+#if UNITY_EDITOR
         private static string FindAssemblyDefinition(string fileName)
         {
             var guids = AssetDatabase.FindAssets($"t:AssemblyDefinitionAsset");
@@ -116,6 +122,7 @@ namespace EggFramework.Util
             Debug.LogWarning($"未找到文件: {fileName}");
             return null;
         }
+#endif
 
         private static string GetParentDirectory(string path)
         {
