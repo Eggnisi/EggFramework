@@ -16,9 +16,9 @@ namespace EggFramework.AudioSystem
     [Serializable, HideReferenceObjectPicker]
     public sealed class AudioReviseData
     {
-        [LabelText("全局音量映射")]
-        public Vector2 GlobalVolumeMapping = new(0f, 1f);
-        [LabelText("音频修正项"), HideReferenceObjectPicker]
+        [LabelText("全局音量映射")] public Vector2 GlobalVolumeMapping = new(0f, 1f);
+
+        [LabelText("音频修正项"), HideReferenceObjectPicker, ReadOnly]
         public List<AudioReviseItem> ReviseItems = new();
     }
 
