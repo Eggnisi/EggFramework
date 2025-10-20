@@ -24,6 +24,9 @@ namespace EggFramework.AudioSystem
         private readonly Dictionary<AudioGroup, int>                       _groupIndexDic      = new();
         private readonly Dictionary<AudioGroup, List<AudioSystemModifier>> _runtimeModifierDic = new();
         private          bool                                              _useMixer;
+        
+        // 音频修正管理器
+        private AudioReviseManager _reviseManager;
 
         protected override void OnInit()
         {
@@ -37,9 +40,13 @@ namespace EggFramework.AudioSystem
             this.RegisterEvent<PlayBGMEvent>(e => PlayBGM(e.BGMName));
             this.RegisterEvent<PlaySFXEvent>(e => PlaySFX(e.FXName));
             this.RegisterEvent<PlayAudioGroupEvent>(e => PlayGroup(e.GroupName));
+            
+            // 初始化音频修正管理器
+            _reviseManager = new AudioReviseManager();
         }
 
         private AudioData _data;
+
         protected override async UniTask OnAsyncInit()
         {
             SetAudioData(await ResUtil.LoadAssetAsync<AudioData>(nameof(AudioData)));
@@ -50,7 +57,6 @@ namespace EggFramework.AudioSystem
         private readonly List<AudioSource> _sfxSourceInPlay = new();
         private          float             _sfxVolume       = 1;
         private          float             _bgmVolume       = 1;
-
 
         private GameObject _audioObj;
 
@@ -75,8 +81,12 @@ namespace EggFramework.AudioSystem
             }
 
             _sfxSourceInPlay.Add(sfxSource);
-            sfxSource.volume = _sfxVolume;
+            
+            // 使用修正管理器获取修正设置
+            var reviseSettings = _reviseManager.GetReviseSettings(clip.name, _sfxVolume, _data?.ReviseData);
+            sfxSource.volume = reviseSettings.FinalVolume;
             sfxSource.PlayOneShot(clip);
+            sfxSource.time = reviseSettings.StartPoint;
             return sfxSource;
         }
 
@@ -97,9 +107,14 @@ namespace EggFramework.AudioSystem
 
             try
             {
-                _bgmSource.clip   = _data.BGMAudios.First();
-                _bgmSource.volume = _bgmVolume;
+                var clip = _data.BGMAudios.First();
+                
+                // 使用修正管理器获取修正设置
+                var reviseSettings = _reviseManager.GetReviseSettings(clip.name, _bgmVolume, _data.ReviseData);
+                _bgmSource.clip   = clip;
+                _bgmSource.volume = reviseSettings.FinalVolume;
                 _bgmSource.Play();
+                _bgmSource.time = reviseSettings.StartPoint;
             }
             catch (Exception e)
             {
@@ -113,13 +128,17 @@ namespace EggFramework.AudioSystem
         {
             _bgmSwitchTween.CheckAndGenTween(() =>
             {
-                var rawVolume = _bgmSource.volume;
+                // 使用修正管理器获取修正设置
+                var reviseSettings = _reviseManager.GetReviseSettings(clip.name, _bgmVolume, _data?.ReviseData);
+                var rawVolume = reviseSettings.FinalVolume;
+                
                 return DOTween.Sequence()
                     .Append(DOTween.To(val => { _bgmSource.volume = rawVolume * (1 - val); }, 0, 1, 0.5f))
                     .AppendCallback(() =>
                     {
                         _bgmSource.clip = clip;
                         _bgmSource.Play();
+                        _bgmSource.time = reviseSettings.StartPoint;
                     }).Append(DOTween.To(val => { _bgmSource.volume = rawVolume * val; }, 0, 1, 0.5f));
             }, CustomTween.ETweenCheckMode.Override);
             return _bgmSource;
@@ -136,7 +155,7 @@ namespace EggFramework.AudioSystem
                     return;
                 }
 
-                InnerPlayBGM(clip); 
+                InnerPlayBGM(clip);
             });
         }
 
@@ -159,18 +178,23 @@ namespace EggFramework.AudioSystem
         {
             strength   = Mathf.Clamp01(strength);
             _bgmVolume = strength;
-            if (_bgmSource) _bgmSource.volume = _bgmVolume;
+            if (_bgmSource && _bgmSource.clip)
+            {
+                // 使用修正管理器获取修正设置
+                var reviseSettings = _reviseManager.GetReviseSettings(_bgmSource.clip.name, _bgmVolume, _data?.ReviseData);
+                _bgmSource.volume = reviseSettings.FinalVolume;
+            }
         }
 
         public void SetSFXVolume(float strength)
         {
-            strength  = Mathf.Clamp01(strength);
+            strength   = Mathf.Clamp01(strength);
             _sfxVolume = strength;
         }
 
-        public void BindBGMVolume(BindableProperty<float> bgm)=>bgm.RegisterWithInitValue(SetBGMVolume);
+        public void BindBGMVolume(BindableProperty<float> bgm) => bgm.RegisterWithInitValue(SetBGMVolume);
         public void BindSFXVolume(BindableProperty<float> sfx) => sfx.RegisterWithInitValue(SetSFXVolume);
-        
+
         public void PlayGroup(string groupName)
         {
             this.ExecuteInstantOrDont(() =>
@@ -188,7 +212,8 @@ namespace EggFramework.AudioSystem
             if (!_data)
             {
                 _onLoaded += action;
-            }else action?.Invoke();
+            }
+            else action?.Invoke();
         }
 
         private void PlaySFXByGroup(AudioGroup group)
@@ -368,5 +393,82 @@ namespace EggFramework.AudioSystem
             Debug.LogError($"没有找到音频组{groupName}");
             return new List<AudioSystemModifier>();
         }
+    }
+
+    /// <summary>
+    /// 音频修正管理器 - 专门处理音频修正逻辑
+    /// </summary>
+    public class AudioReviseManager
+    {
+        /// <summary>
+        /// 获取音频修正设置
+        /// </summary>
+        /// <param name="clipName">音频剪辑名称</param>
+        /// <param name="baseVolume">基础音量</param>
+        /// <param name="reviseData">修正数据</param>
+        /// <returns>修正后的设置</returns>
+        public ReviseSettings GetReviseSettings(string clipName, float baseVolume, AudioReviseData reviseData)
+        {
+            var reviseItem = GetReviseItem(clipName, reviseData);
+            var finalVolume = CalculateFinalVolume(baseVolume, reviseItem, reviseData);
+            
+            return new ReviseSettings
+            {
+                StartPoint = reviseItem.StartPoint,
+                FinalVolume = finalVolume
+            };
+        }
+
+        /// <summary>
+        /// 获取修正项
+        /// </summary>
+        private AudioReviseItem GetReviseItem(string clipName, AudioReviseData reviseData)
+        {
+            if (reviseData == null)
+            {
+                return new AudioReviseItem
+                {
+                    TargetAudio = clipName,
+                    StartPoint = 0f,
+                    VolumeRevise = 0f
+                };
+            }
+
+            return reviseData.ReviseItems.Find(item => item.TargetAudio == clipName) ??
+                   new AudioReviseItem
+                   {
+                       TargetAudio = clipName,
+                       StartPoint = 0f,
+                       VolumeRevise = 0f
+                   };
+        }
+
+        /// <summary>
+        /// 计算最终音量
+        /// </summary>
+        private float CalculateFinalVolume(float baseVolume, AudioReviseItem reviseItem, AudioReviseData reviseData)
+        {
+            if (reviseData == null)
+            {
+                return baseVolume + reviseItem.VolumeRevise;
+            }
+
+            var globalAdjustedVolume = Mathf.Lerp(
+                reviseData.GlobalVolumeMapping.x,
+                reviseData.GlobalVolumeMapping.y,
+                baseVolume
+            );
+            
+            return globalAdjustedVolume + reviseItem.VolumeRevise;
+        }
+    }
+
+    /// <summary>
+    /// 修正设置结果
+    /// </summary>
+    public struct ReviseSettings
+    {
+        public float StartPoint;
+        public float FinalVolume;
     }
 }
