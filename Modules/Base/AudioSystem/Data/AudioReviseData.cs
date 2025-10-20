@@ -11,14 +11,14 @@ using Sirenix.OdinInspector;
 
 namespace EggFramework.AudioSystem
 {
-    [Serializable]
+    [Serializable,HideReferenceObjectPicker]
     public sealed class AudioReviseData
     {
-        [LabelText("音频修正项")]
+        [LabelText("音频修正项"),HideReferenceObjectPicker]
         public List<AudioReviseItem> ReviseItems = new();
     }
 
-    [Serializable]
+    [Serializable,HideReferenceObjectPicker]
     public sealed class AudioReviseItem
     {
         [LabelText("目标音频")]
