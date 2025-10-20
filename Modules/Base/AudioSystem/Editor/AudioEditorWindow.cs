@@ -92,6 +92,7 @@ namespace EggFramework.AudioSystem
                 { "资源查看", new AudioEditorWindowPreviewClip(this, Setting, Data) },
                 { "音频组设置", new AudioEditorWindowGroupSetting(this, Setting, Data) },
                 { "输出设置", new AudioEditorWindowOutputSetting(this, Setting, Data) },
+                { "修正数据", new AudioEditorWindowReviseData(this, Setting, Data) },
             };
             return tree;
         }

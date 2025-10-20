@@ -20,7 +20,8 @@ namespace EggFramework.AudioSystem
         [LabelText("背景音乐引用")] public List<AudioClip>          BGMAudios = new();
         [LabelText("音效引用")]   public List<AudioClip>          SFXAudios = new();
         [LabelText("混音器")]    public AudioMixer               Mixer;
-        [LabelText("音频组")]    public List<AudioGroup>         Groups   = new();
-        [LabelText("输出设置")]   public List<AudioOutputSetting> Settings = new();
+        [LabelText("音频组")]    public List<AudioGroup>         Groups     = new();
+        [LabelText("输出设置")]   public List<AudioOutputSetting> Settings   = new();
+        [LabelText("音频修正数据")] public AudioReviseData          ReviseData = new();
     }
 }
