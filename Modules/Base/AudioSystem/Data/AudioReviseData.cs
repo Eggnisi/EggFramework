@@ -7,25 +7,33 @@
 
 using System;
 using System.Collections.Generic;
+using EggFramework.Util;
 using Sirenix.OdinInspector;
 
 namespace EggFramework.AudioSystem
 {
-    [Serializable,HideReferenceObjectPicker]
+    [Serializable, HideReferenceObjectPicker]
     public sealed class AudioReviseData
     {
-        [LabelText("音频修正项"),HideReferenceObjectPicker]
+        [LabelText("音频修正项"), HideReferenceObjectPicker]
         public List<AudioReviseItem> ReviseItems = new();
     }
 
-    [Serializable,HideReferenceObjectPicker]
+    [Serializable, HideReferenceObjectPicker]
     public sealed class AudioReviseItem
     {
-        [LabelText("目标音频")]
+        [LabelText("目标音频"), ValueDropdown("GetAudioNames")]
         public string TargetAudio;
-        [LabelText("起始点"), SuffixLabel("s")]
-        public float StartPoint;
-        [LabelText("音量修正")]
-        public float VolumeRevise;
+
+        [LabelText("起始点"), SuffixLabel("s")] public float StartPoint;
+        [LabelText("音量修正")]                  public float VolumeRevise;
+#if UNITY_EDITOR
+        private IEnumerable<string> GetAudioNames()
+        {
+            var ret = StorageUtil.LoadFromSettingFile("AudioConstant.BGMIds",    new List<string>());
+            ret.AddRange(StorageUtil.LoadFromSettingFile("AudioConstant.SFXIds", new List<string>()));
+            return ret;
+        }
+#endif
     }
 }
