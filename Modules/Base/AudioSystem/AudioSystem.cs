@@ -85,7 +85,9 @@ namespace EggFramework.AudioSystem
             // 使用修正管理器获取修正设置
             var reviseSettings = _reviseManager.GetReviseSettings(clip.name, _sfxVolume, _data?.ReviseData);
             sfxSource.volume = reviseSettings.FinalVolume;
-            sfxSource.PlayOneShot(clip);
+            sfxSource.clip   = clip;
+            sfxSource.loop   = false;
+            sfxSource.Play();
             sfxSource.time = reviseSettings.StartPoint;
             return sfxSource;
         }
