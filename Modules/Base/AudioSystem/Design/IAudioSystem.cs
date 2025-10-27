@@ -14,6 +14,7 @@ namespace EggFramework.AudioSystem
     public interface IAudioSystem : ISystem
     {
         void PlayBGM(string bgm);
+        void StopBGM();
         void PlaySFX(string sfx);
         //统一设置零到一的值
         void SetBGMVolume(float strength);

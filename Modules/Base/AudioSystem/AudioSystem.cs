@@ -161,6 +161,11 @@ namespace EggFramework.AudioSystem
             });
         }
 
+        public void StopBGM()
+        {
+            _bgmSource.Stop();
+        }
+
         public void PlaySFX(string sfx)
         {
             this.ExecuteInstantOrDont(() =>
