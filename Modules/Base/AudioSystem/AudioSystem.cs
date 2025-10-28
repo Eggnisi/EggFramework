@@ -147,7 +147,8 @@ namespace EggFramework.AudioSystem
         }
 
         public void PlayBGM(string bgm)
-        {
+        { 
+            if (string.IsNullOrEmpty(bgm) || bgm is "NULL" or "null" or "Null") return;
             this.ExecuteInstantOrDont(() =>
             {
                 var clip = _data.BGMAudios.Find(au => au.name == bgm);
