@@ -15,7 +15,7 @@ namespace EggFramework.Util
     {
         public static readonly List<string> ColorEnum = new()
         {
-            "White", "Red", "Yellow", "Blue", "Cyan", "Magenta", "Green", "Black", ""
+            "White", "Red", "Yellow", "Blue", "Cyan", "Magenta", "Green", "Black", "Grey", "Gray", ""
         };
 
         public static Color SetTransparent(this Color self)
@@ -60,6 +60,8 @@ namespace EggFramework.Util
                 "Yellow"  => Color.yellow,
                 "White"   => Color.white,
                 "Black"   => Color.black,
+                "Grey"    => Color.grey,
+                "Gray"    => Color.gray,
                 _         => Color.clear
             };
         }
